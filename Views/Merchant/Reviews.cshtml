@@ -1,0 +1,48 @@
+@model List<Review>
+@{
+    ViewData["Title"] = "Shop reviews";
+    ViewBag.MerchantMenu = "reviews";
+    var rating = ViewBag.Rating as int?;
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Reviews of my products</h1>
+
+        <div class="mb-3 d-flex gap-1 flex-wrap">
+            <a class="btn btn-sm @(rating == null ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Reviews">All</a>
+            @for (var r = 5; r >= 1; r--)
+            {
+                <a class="btn btn-sm @(rating == r ? "btn-accent" : "btn-outline-secondary")"
+                   asp-controller="Merchant" asp-action="Reviews" asp-route-rating="@r">@r ★</a>
+            }
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-light border">No review for this filter.</div>
+        }
+
+        @foreach (var review in Model)
+        {
+            <div class="card shadow-sm mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>@review.Product?.ProductName</span>
+                        <span>@review.CreatedAt.ToString("yyyy-MM-dd")</span>
+                    </div>
+                    <div class="text-warning">
+                        @for (var i = 0; i < review.Rating; i++)
+                        {
+                            <span>★</span>
+                        }
+                    </div>
+                    <div class="small">@review.Content</div>
+                    <div class="small text-muted">By @(review.Customer?.Username)</div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

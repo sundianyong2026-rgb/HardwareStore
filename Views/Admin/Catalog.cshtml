@@ -1,0 +1,340 @@
+﻿@{
+    ViewData["Title"] = "Categories and brands";
+    ViewBag.AdminMenu = "catalog";
+    var categories = ViewBag.Categories as List<Category> ?? new List<Category>();
+    var brands = ViewBag.Brands as List<Brand> ?? new List<Brand>();
+}
+
+@functions {
+    // How deep a category sits in the tree, used only for indentation on this page.
+    private int CategoryDepth(List<Category> all, int categoryId)
+    {
+        var map = new Dictionary<int, int?>();
+        foreach (var c in all) map[c.CategoryId] = c.ParentId;
+
+        var depth = 0;
+        int? parent = map.TryGetValue(categoryId, out var p) ? p : null;
+        while (parent != null && depth < 6)
+        {
+            depth++;
+            parent = map.TryGetValue(parent.Value, out var np) ? np : null;
+        }
+        return depth;
+    }
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Categories and brands</h1>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Categories</span>
+                <span class="small text-muted">Drag the handle to reorder</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                    <tr><th style="width:2rem;"></th><th>Name</th><th>Parent</th><th>Active</th><th></th></tr>
+                    </thead>
+                    <tbody id="categoryRows">
+                    @foreach (var c in categories)
+                    {
+                        var depth = CategoryDepth(categories, c.CategoryId);
+                        <tr data-id="@c.CategoryId" data-parent="@(c.ParentId ?? 0)" class="category-row">
+                            <td class="text-muted" style="cursor:grab;"><i class="bi bi-grip-vertical"></i></td>
+                            <td class="small" style="padding-left:@(depth * 20)px;">
+                                @if (depth > 0)
+                                {
+                                    <span class="text-muted">└</span>
+                                }
+                                @c.Name
+                            </td>
+                            <td class="small text-muted">
+                                @(c.ParentId == null ? "—" : categories.FirstOrDefault(x => x.CategoryId == c.ParentId)?.Name)
+                            </td>
+                            <td class="small">@(c.IsActive ? "yes" : "no")</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-link p-0 edit-category"
+                                            data-id="@c.CategoryId"
+                                            data-name="@c.Name"
+                                            data-parent="@(c.ParentId?.ToString() ?? "")"
+                                            data-active="@(c.IsActive ? "true" : "false")">Edit</button>
+                                    <form method="post" asp-controller="Admin" asp-action="DeleteCategory"
+                                          onsubmit="return confirm('Delete this category?')">
+                                        <input type="hidden" name="categoryId" value="@c.CategoryId" />
+                                        <button class="btn btn-sm btn-link text-danger p-0" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-body">
+                <form class="row g-2 align-items-end" method="post" asp-controller="Admin"
+                      asp-action="SaveCategory" id="categoryForm">
+                    <input type="hidden" name="categoryId" id="categoryId" value="0" />
+                    <div class="col-md-5">
+                        <label class="form-label small">Name</label>
+                        <input class="form-control form-control-sm" name="name" id="categoryName" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Parent category</label>
+                        <select class="form-select form-select-sm" name="parentId" id="categoryParent">
+                            <option value="">Top level</option>
+                            @foreach (var c in categories.Where(x => x.ParentId == null))
+                            {
+                                <option value="@c.CategoryId">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="isActive" value="true"
+                                   id="categoryActive" checked />
+                            <label class="form-check-label small" for="categoryActive">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-accent w-100" type="submit" id="categorySubmit">Add</button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-link p-0 d-none" type="button" id="categoryCancel">
+                            Cancel editing
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Brands</span>
+                <span class="small text-muted">Drag a card to reorder</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-3 mb-3" id="brandCards">
+                    @foreach (var b in brands)
+                    {
+                        <div class="text-center border rounded p-2 brand-card" data-id="@b.BrandId" style="cursor:grab;">
+                            <img class="thumb" style="width:72px;height:72px;"
+                                 src="@(b.LogoUrl ?? "/images/products/.gitkeep")" alt="" />
+                            <div class="small mt-1">@b.Name</div>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button type="button" class="btn btn-sm btn-link p-0 edit-brand"
+                                        data-id="@b.BrandId"
+                                        data-name="@b.Name"
+                                        data-active="@(b.IsActive ? "true" : "false")">Edit</button>
+                                <form method="post" asp-controller="Admin" asp-action="DeleteBrand"
+                                      onsubmit="return confirm('Delete this brand?')">
+                                    <input type="hidden" name="brandId" value="@b.BrandId" />
+                                    <button class="btn btn-sm btn-link text-danger p-0" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <form class="row g-2 align-items-end" method="post" asp-controller="Admin"
+                      asp-action="SaveBrand" enctype="multipart/form-data" id="brandForm">
+                    <input type="hidden" name="brandId" id="brandId" value="0" />
+                    <div class="col-md-5">
+                        <label class="form-label small">Brand name</label>
+                        <input class="form-control form-control-sm" name="name" id="brandName" required />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small">Logo <span class="text-muted">(optional)</span></label>
+                        <input class="form-control form-control-sm" type="file" name="logoFile" accept="image/*" />
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="isActive" value="true"
+                                   id="brandActive" checked />
+                            <label class="form-check-label small" for="brandActive">Active</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-sm btn-accent w-100" type="submit" id="brandSubmit">Add</button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-link p-0 d-none" type="button" id="brandCancel">
+                            Cancel editing
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-3">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Products of a category</span>
+                <span class="small text-muted">Drag a row to change the order inside the category</span>
+            </div>
+            <div class="card-body">
+                <form class="d-flex gap-2 align-items-end mb-3" method="get" asp-controller="Admin" asp-action="Catalog">
+                    <div>
+                        <label class="form-label small">Category</label>
+                        <select class="form-select form-select-sm" name="categoryIdFilter" style="min-width:220px;">
+                            <option value="0">— choose a category —</option>
+                            @foreach (var c in categories)
+                            {
+                                <option value="@c.CategoryId" selected="@((int)(ViewBag.CategoryId ?? 0) == c.CategoryId)">
+                                    @(c.ParentId == null ? c.Name : "— " + c.Name)
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <button class="btn btn-sm btn-accent" type="submit">Show products</button>
+                </form>
+
+                @{
+                    var categoryProducts = ViewBag.CategoryProducts as List<Product> ?? new List<Product>();
+                    var shownCategoryId = (int)(ViewBag.CategoryId ?? 0);
+                }
+
+                @if (shownCategoryId == 0)
+                {
+                    <div class="small text-muted">Pick a category to see and reorder its products.</div>
+                }
+                else if (!categoryProducts.Any())
+                {
+                    <div class="small text-muted">No product in this category yet.</div>
+                }
+                else
+                {
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                        <tr><th style="width:2rem;"></th><th>Product</th><th>Shop</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="productRows">
+                        @foreach (var p in categoryProducts)
+                        {
+                            <tr data-id="@p.ProductId">
+                                <td class="text-muted" style="cursor:grab;"><i class="bi bi-grip-vertical"></i></td>
+                                <td class="small">@p.ProductName</td>
+                                <td class="small text-muted">@(p.Merchant?.ShopName ?? "—")</td>
+                                <td>
+                                    <span class="badge @(p.Status == "on" ? "bg-success" : "bg-secondary")">@p.Status</span>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                    <div class="small text-muted mt-2">
+                        New products and products moved to another category are placed at the end automatically.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+    <script>
+        (function () {
+            // ---- Category editing ----
+            var cForm = document.getElementById('categoryForm');
+            var cId = document.getElementById('categoryId');
+            var cSubmit = document.getElementById('categorySubmit');
+            var cCancel = document.getElementById('categoryCancel');
+
+            document.querySelectorAll('.edit-category').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    cId.value = btn.dataset.id;
+                    document.getElementById('categoryName').value = btn.dataset.name || '';
+                    document.getElementById('categoryParent').value = btn.dataset.parent || '';
+                    document.getElementById('categoryActive').checked = btn.dataset.active === 'true';
+                    cSubmit.textContent = 'Update';
+                    cCancel.classList.remove('d-none');
+                    cForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            });
+
+            cCancel.addEventListener('click', function () {
+                cForm.reset();
+                cId.value = '0';
+                cSubmit.textContent = 'Add';
+                cCancel.classList.add('d-none');
+            });
+
+            // ---- Brand editing ----
+            var bForm = document.getElementById('brandForm');
+            var bId = document.getElementById('brandId');
+            var bSubmit = document.getElementById('brandSubmit');
+            var bCancel = document.getElementById('brandCancel');
+
+            document.querySelectorAll('.edit-brand').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    bId.value = btn.dataset.id;
+                    document.getElementById('brandName').value = btn.dataset.name || '';
+                    document.getElementById('brandActive').checked = btn.dataset.active === 'true';
+                    bSubmit.textContent = 'Update';
+                    bCancel.classList.remove('d-none');
+                    bForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            });
+
+            bCancel.addEventListener('click', function () {
+                bForm.reset();
+                bId.value = '0';
+                bSubmit.textContent = 'Add';
+                bCancel.classList.add('d-none');
+            });
+
+            // ---- Drag to reorder: the new order is stored on the server ----
+            function persist(url, ids) {
+                var body = new URLSearchParams();
+                body.append('ids', ids);
+                fetch(url, { method: 'POST', body: body })
+                    .catch(function () { location.reload(); });
+            }
+
+            var rows = document.getElementById('categoryRows');
+            if (rows && window.Sortable) {
+                Sortable.create(rows, {
+                    handle: 'td:first-child',
+                    animation: 150,
+                    onMove: function (evt) {
+                        // A category may only move between its own brothers and sisters.
+                        var dragged = evt.dragged;
+                        var related = evt.related;
+                        if (!related || !related.classList || !related.classList.contains('category-row')) return true;
+                        return dragged.dataset.parent === related.dataset.parent;
+                    },
+                    onEnd: function () {
+                        var ids = Array.from(rows.querySelectorAll('tr')).map(function (tr) { return tr.dataset.id; });
+                        persist('@Url.Action("ReorderCategories", "Admin")', ids.join(','));
+                    }
+                });
+            }
+
+            var cards = document.getElementById('brandCards');
+            if (cards && window.Sortable) {
+                Sortable.create(cards, {
+                    animation: 150,
+                    onEnd: function () {
+                        var ids = Array.from(cards.querySelectorAll('.brand-card')).map(function (el) { return el.dataset.id; });
+                        persist('@Url.Action("ReorderBrands", "Admin")', ids.join(','));
+                    }
+                });
+            }
+
+            var productRows = document.getElementById('productRows');
+            if (productRows && window.Sortable) {
+                Sortable.create(productRows, {
+                    handle: 'td:first-child',
+                    animation: 150,
+                    onEnd: function () {
+                        var ids = Array.from(productRows.querySelectorAll('tr')).map(function (tr) { return tr.dataset.id; });
+                        persist('@Url.Action("ReorderProducts", "Admin")', ids.join(','));
+                    }
+                });
+            }
+        })();
+    </script>
+}

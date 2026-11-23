@@ -1,0 +1,114 @@
+@model List<Merchant>
+@{
+    ViewData["Title"] = "Merchants";
+    ViewBag.AdminMenu = "merchants";
+    var status = ViewBag.Status as string;
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Merchant onboarding</h1>
+
+        <div class="mb-3 d-flex gap-2">
+            <a class="btn btn-sm @(string.IsNullOrEmpty(status) ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Admin" asp-action="Merchants">All</a>
+            <a class="btn btn-sm @(status == "pending" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Admin" asp-action="Merchants" asp-route-status="pending">Pending</a>
+            <a class="btn btn-sm @(status == "approved" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Admin" asp-action="Merchants" asp-route-status="approved">Approved</a>
+            <a class="btn btn-sm @(status == "rejected" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Admin" asp-action="Merchants" asp-route-status="rejected">Rejected</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                    <tr><th>Shop</th><th>Contact</th><th>E-mail</th><th>Status</th><th>Submitted</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="6" class="small text-muted">No merchant.</td></tr>
+                    }
+                    @foreach (var m in Model)
+                    {
+                        <tr>
+                            <td class="small">
+                                <div class="fw-semibold">@m.ShopName</div>
+                                <div class="text-muted">@m.Description</div>
+                            </td>
+                            <td class="small">@m.ContactName<br />@m.Phone</td>
+                            <td class="small">@m.Email</td>
+                            <td>
+                                @{
+                                    // One badge only: the state that matters right now.
+                                    string stateText;
+                                    string stateClass;
+                                    if (m.DeletionRequestedAt != null) { stateText = "closure asked"; stateClass = "bg-warning text-dark"; }
+                                    else if (m.IsDisabled) { stateText = "disabled"; stateClass = "bg-danger"; }
+                                    else if (m.Status == "pending") { stateText = "pending"; stateClass = "bg-warning text-dark"; }
+                                    else if (m.Status != "approved") { stateText = m.Status; stateClass = "bg-secondary"; }
+                                    else { stateText = "approved"; stateClass = "bg-success"; }
+                                }
+                                <span class="badge @stateClass">@stateText</span>
+                            </td>
+                            <td class="small">@m.SubmittedAt.ToString("yyyy-MM-dd")</td>
+                            <td>
+                                @if (m.Status == "pending")
+                                {
+                                    <div class="d-flex gap-1">
+                                        <form method="post" asp-controller="Admin" asp-action="ApproveMerchant">
+                                            <input type="hidden" name="merchantId" value="@m.MerchantId" />
+                                            <input type="hidden" name="decision" value="approve" />
+                                            <button class="btn btn-sm btn-accent" type="submit">Approve</button>
+                                        </form>
+                                        <form method="post" asp-controller="Admin" asp-action="ApproveMerchant">
+                                            <input type="hidden" name="merchantId" value="@m.MerchantId" />
+                                            <input type="hidden" name="decision" value="reject" />
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Reject</button>
+                                        </form>
+                                    </div>
+                                }
+                                @if (m.Status == "approved")
+                                {
+                                    <div class="d-flex gap-1 mt-1 flex-wrap">
+                                        <form method="post" asp-controller="Admin" asp-action="ToggleMerchant">
+                                            <input type="hidden" name="merchantId" value="@m.MerchantId" />
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">
+                                                @(m.IsDisabled ? "Enable" : "Disable")
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-controller="Admin" asp-action="ResetMerchantPassword"
+                                              onsubmit="return confirm('Reset this shop password?')">
+                                            <input type="hidden" name="merchantId" value="@m.MerchantId" />
+                                            <button class="btn btn-sm btn-outline-primary" type="submit">Reset pwd</button>
+                                        </form>
+                                        @if (m.DeletionRequestedAt != null)
+                                        {
+                                            <form method="post" asp-controller="Admin" asp-action="DecideDeletion"
+                                                  onsubmit="return confirm('Close this shop account?')">
+                                                <input type="hidden" name="role" value="merchant" />
+                                                <input type="hidden" name="id" value="@m.MerchantId" />
+                                                <input type="hidden" name="decision" value="approve" />
+                                                <button class="btn btn-sm btn-danger" type="submit">Close shop</button>
+                                            </form>
+                                            <form method="post" asp-controller="Admin" asp-action="DecideDeletion">
+                                                <input type="hidden" name="role" value="merchant" />
+                                                <input type="hidden" name="id" value="@m.MerchantId" />
+                                                <input type="hidden" name="decision" value="reject" />
+                                                <button class="btn btn-sm btn-outline-secondary" type="submit">Reject</button>
+                                            </form>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

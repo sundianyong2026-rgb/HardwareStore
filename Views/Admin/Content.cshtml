@@ -1,0 +1,188 @@
+﻿@{
+    ViewData["Title"] = "Banners and notices";
+    ViewBag.AdminMenu = "content";
+    var banners = ViewBag.Banners as List<Banner> ?? new List<Banner>();
+    var notices = ViewBag.Notices as List<Notice> ?? new List<Notice>();
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Home page content</h1>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white fw-semibold">Rotating banners</div>
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    @foreach (var b in banners)
+                    {
+                        <div class="col-md-4">
+                            <div class="border rounded p-2">
+                                <img src="@b.ImageUrl" style="width:100%;height:110px;object-fit:cover;" alt="" />
+                                <div class="small mt-1">@b.Title</div>
+                                <div class="small text-muted">Sort @b.SortOrder · @(b.IsActive ? "on" : "off")</div>
+                                <div class="d-flex gap-2 mt-1">
+                                    <button type="button" class="btn btn-sm btn-link p-0 edit-banner"
+                                            data-id="@b.BannerId"
+                                            data-title="@b.Title"
+                                            data-link="@b.LinkUrl"
+                                            data-sort="@b.SortOrder"
+                                            data-active="@(b.IsActive ? "true" : "false")">Edit</button>
+                                    <form method="post" asp-controller="Admin" asp-action="DeleteBanner"
+                                          onsubmit="return confirm('Delete this banner?')">
+                                        <input type="hidden" name="bannerId" value="@b.BannerId" />
+                                        <button class="btn btn-sm btn-link text-danger p-0" type="submit">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <form class="row g-2 align-items-end" method="post" asp-controller="Admin"
+                      asp-action="SaveBanner" enctype="multipart/form-data" id="bannerForm">
+                    <input type="hidden" name="bannerId" id="bannerId" value="0" />
+                    <div class="col-md-3">
+                        <label class="form-label small">Title</label>
+                        <input class="form-control form-control-sm" name="title" id="bannerTitle" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Link</label>
+                        <input class="form-control form-control-sm" name="linkUrl" id="bannerLink" placeholder="/Product/List" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small">Image <span class="text-muted">(leave empty to keep)</span></label>
+                        <input class="form-control form-control-sm" type="file" name="imageFile" accept="image/*" />
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small">Sort</label>
+                        <input class="form-control form-control-sm" type="number" name="sortOrder" id="bannerSort" value="0" />
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="isActive" value="true" id="bannerActive" checked />
+                            <label class="form-check-label small" for="bannerActive">On</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-sm btn-accent w-100" type="submit" id="bannerSubmit">Add</button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-link p-0 d-none" type="button" id="bannerCancel">Cancel editing</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Shop notices</div>
+            <div class="card-body">
+                @foreach (var n in notices)
+                {
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <div class="small fw-semibold">
+                                @n.Title
+                                <span class="badge @(n.IsActive ? "bg-success" : "bg-secondary") ms-1">@(n.IsActive ? "on" : "off")</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-link p-0 edit-notice"
+                                        data-id="@n.NoticeId"
+                                        data-title="@n.Title"
+                                        data-content="@n.Content"
+                                        data-active="@(n.IsActive ? "true" : "false")">Edit</button>
+                                <form method="post" asp-controller="Admin" asp-action="DeleteNotice"
+                                      onsubmit="return confirm('Delete this notice?')">
+                                    <input type="hidden" name="noticeId" value="@n.NoticeId" />
+                                    <button class="btn btn-sm btn-link text-danger p-0" type="submit">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="small text-muted">@n.Content</div>
+                    </div>
+                }
+
+                <form class="row g-2 align-items-end" method="post" asp-controller="Admin" asp-action="SaveNotice"
+                      id="noticeForm">
+                    <input type="hidden" name="noticeId" id="noticeId" value="0" />
+                    <div class="col-md-4">
+                        <label class="form-label small">Title</label>
+                        <input class="form-control form-control-sm" name="title" id="noticeTitle" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small">Content</label>
+                        <input class="form-control form-control-sm" name="content" id="noticeContent" />
+                    </div>
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="isActive" value="true"
+                                   id="noticeActive" checked />
+                            <label class="form-check-label small" for="noticeActive">On</label>
+                        </div>
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-sm btn-accent w-100" type="submit" id="noticeSubmit">Add</button>
+                    </div>
+                    <div class="col-12">
+                        <button class="btn btn-sm btn-link p-0 d-none" type="button" id="noticeCancel">Cancel editing</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        // ---- Banner editing ----
+        var bForm = document.getElementById('bannerForm');
+        var bId = document.getElementById('bannerId');
+        var bSubmit = document.getElementById('bannerSubmit');
+        var bCancel = document.getElementById('bannerCancel');
+
+        document.querySelectorAll('.edit-banner').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                bId.value = btn.dataset.id;
+                document.getElementById('bannerTitle').value = btn.dataset.title || '';
+                document.getElementById('bannerLink').value = btn.dataset.link || '';
+                document.getElementById('bannerSort').value = btn.dataset.sort || '0';
+                document.getElementById('bannerActive').checked = btn.dataset.active === 'true';
+                bSubmit.textContent = 'Update';
+                bCancel.classList.remove('d-none');
+                bForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+
+        bCancel.addEventListener('click', function () {
+            bForm.reset();
+            bId.value = '0';
+            bSubmit.textContent = 'Add';
+            bCancel.classList.add('d-none');
+        });
+
+        // ---- Notice editing ----
+        var nForm = document.getElementById('noticeForm');
+        var nId = document.getElementById('noticeId');
+        var nSubmit = document.getElementById('noticeSubmit');
+        var nCancel = document.getElementById('noticeCancel');
+
+        document.querySelectorAll('.edit-notice').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                nId.value = btn.dataset.id;
+                document.getElementById('noticeTitle').value = btn.dataset.title || '';
+                document.getElementById('noticeContent').value = btn.dataset.content || '';
+                document.getElementById('noticeActive').checked = btn.dataset.active === 'true';
+                nSubmit.textContent = 'Update';
+                nCancel.classList.remove('d-none');
+                nForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+
+        nCancel.addEventListener('click', function () {
+            nForm.reset();
+            nId.value = '0';
+            nSubmit.textContent = 'Add';
+            nCancel.classList.add('d-none');
+        });
+    })();
+</script>

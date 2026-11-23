@@ -1,0 +1,21 @@
+@{
+    var current = ViewBag.MerchantMenu as string ?? "";
+}
+<div class="card shadow-sm sidebar">
+    <div class="card-header bg-white fw-semibold text-brand">Merchant backend</div>
+    <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action @(current == "dashboard" ? "active" : "")"
+           asp-controller="Merchant" asp-action="Index">Dashboard</a>
+        <a class="list-group-item list-group-item-action @(current == "products" ? "active" : "")"
+           asp-controller="Merchant" asp-action="Products">Products &amp; SKU</a>
+        <a class="list-group-item list-group-item-action @(current == "orders" ? "active" : "")"
+           asp-controller="Merchant" asp-action="Orders">Orders</a>
+        <a class="list-group-item list-group-item-action @(current == "reviews" ? "active" : "")"
+           asp-controller="Merchant" asp-action="Reviews">Reviews</a>
+        <a class="list-group-item list-group-item-action @(current == "messages" ? "active" : "")"
+           asp-controller="Message" asp-action="Index">Messages</a>
+    </div>
+    <div class="card-body small text-muted">
+        You can only see the data of your own shop.
+    </div>
+</div>

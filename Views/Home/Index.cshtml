@@ -1,0 +1,169 @@
+@model HomeViewModel
+@{
+    ViewData["Title"] = "Hardware Store";
+}
+
+<div class="row g-3">
+    <!-- Left: vertical category card with hover subcategories -->
+    <div class="col-lg-2">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold text-brand">Categories</div>
+            <div class="list-group list-group-flush" id="categoryMenu">
+                @foreach (var node in Model.Categories)
+                {
+                    <div class="cat-item position-relative">
+                        <a class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                           asp-controller="Product" asp-action="List" asp-route-categoryId="@node.Category.CategoryId">
+                            <span>@node.Category.Name</span>
+                            @if (node.Children.Any())
+                            {
+                                <i class="bi bi-chevron-right small text-muted"></i>
+                            }
+                        </a>
+                        @if (node.Children.Any())
+                        {
+                            <div class="cat-sub shadow-sm">
+                                <div class="p-2">
+                                    <div class="mb-2">
+                                        @foreach (var child in node.Children)
+                                        {
+                                            <a class="btn btn-sm btn-light border me-1 mb-1"
+                                               asp-controller="Product" asp-action="List"
+                                               asp-route-categoryId="@child.CategoryId">@child.Name</a>
+                                        }
+                                    </div>
+                                    @{
+                                        var recommended = Model.Rows.FirstOrDefault(r => r.CategoryId == node.Category.CategoryId);
+                                    }
+                                    @if (recommended != null)
+                                    {
+                                        foreach (var card in recommended.Products.Take(2))
+                                        {
+                                            <a class="d-flex align-items-center text-decoration-none text-dark mb-1"
+                                               asp-controller="Product" asp-action="Detail"
+                                               asp-route-id="@card.Product.ProductId">
+                                                <img class="thumb me-2" src="@(card.Product.MainImage ?? "/images/products/.gitkeep")" alt="" />
+                                                <span class="small">@card.Product.ProductName</span>
+                                            </a>
+                                        }
+                                    }
+                                    <a class="small" asp-controller="Product" asp-action="List"
+                                       asp-route-categoryId="@node.Category.CategoryId">More &raquo;</a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle: rotating banner -->
+    <div class="col-lg-7">
+        <div id="bannerCarousel" class="carousel slide shadow-sm" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                @if (Model.Banners.Any())
+                {
+                    var first = true;
+                    foreach (var banner in Model.Banners)
+                    {
+                        <div class="carousel-item @(first ? "active" : "")" style="height: 320px;">
+                            <a href="@(banner.LinkUrl ?? "#")">
+                                <img src="@banner.ImageUrl" class="d-block w-100" style="height:320px;object-fit:cover;"
+                                     alt="@banner.Title" />
+                            </a>
+                        </div>
+                        first = false;
+                    }
+                }
+                else
+                {
+                    <div class="carousel-item active">
+                        <div class="d-flex align-items-center justify-content-center bg-white border" style="height:320px;">
+                            <span class="text-muted">No banner uploaded yet</span>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#bannerCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#bannerCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Right: notices -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold text-brand">Shop notices</div>
+            <div class="list-group list-group-flush">
+                @if (Model.Notices.Any())
+                {
+                    foreach (var notice in Model.Notices)
+                    {
+                        <div class="list-group-item">
+                            <div class="fw-semibold small">@notice.Title</div>
+                            <div class="text-muted small">@notice.Content</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="list-group-item text-muted small">No notice yet</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Best-selling rows per top category -->
+@foreach (var row in Model.Rows)
+{
+    <div class="mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h5 mb-0 text-brand">@row.Title best sellers</h2>
+            <a class="small" asp-controller="Product" asp-action="List" asp-route-categoryId="@row.CategoryId">More &raquo;</a>
+        </div>
+        <div class="row g-3">
+            @foreach (var card in row.Products)
+            {
+                <div class="col-6 col-md-3">
+                    <div class="card h-100 shadow-sm position-relative">
+                        <a asp-controller="Product" asp-action="Detail" asp-route-id="@card.Product.ProductId">
+                            <img class="card-img-top" style="width:100%;height:180px;object-fit:cover;display:block;"
+                                 src="@(card.Product.MainImage ?? "/images/products/.gitkeep")" alt="" />
+                        </a>
+                        <div class="card-body p-2">
+                            <div class="small text-truncate" title="@card.Product.ProductName">
+                                <a class="text-decoration-none text-dark stretched-link"
+                                   asp-controller="Product" asp-action="Detail"
+                                   asp-route-id="@card.Product.ProductId">@card.Product.ProductName</a>
+                            </div>
+                            <div class="price">@card.MinPrice.ToString("0.00")</div>
+                            <div class="small text-muted">
+                                @if (card.ReviewCount > 0)
+                                {
+                                    <span>@card.AvgRating.ToString("0.0") ★ (@card.ReviewCount)</span>
+                                }
+                                else
+                                {
+                                    <span>No reviews yet</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .cat-item { position: relative; }
+    .cat-sub { display: none; position: absolute; left: 100%; top: 0; width: 340px; background: #fff;
+               border: 1px solid #dee2e6; border-radius: .4rem; z-index: 1060; }
+    .cat-item:hover .cat-sub { display: block; }
+    @@media (max-width: 991px) { .cat-sub { display: none !important; } }
+</style>

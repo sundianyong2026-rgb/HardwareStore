@@ -1,0 +1,163 @@
+@model ProductListViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    var q = new Dictionary<string, string>();
+}
+
+<div class="row g-4">
+    <!-- Left filter panel -->
+    <div class="col-lg-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Filter</div>
+            <div class="card-body">
+                <form method="get" asp-controller="Product" asp-action="List">
+                    <input type="hidden" name="keyword" value="@Model.Keyword" />
+                    <input type="hidden" name="sort" value="@Model.Sort" />
+
+                    <label class="form-label small fw-semibold">Category</label>
+                    <select class="form-select form-select-sm mb-3" name="categoryId">
+                        <option value="">All categories</option>
+                        @{
+                            var parentOf = Model.Categories.ToDictionary(x => x.CategoryId, x => x.ParentId);
+                        }
+                        @foreach (var c in Model.Categories)
+                        {
+                            var depth = 0;
+                            var parent = parentOf.TryGetValue(c.CategoryId, out var pid) ? pid : null;
+                            while (parent != null && depth < 5)
+                            {
+                                depth++;
+                                parent = parentOf.TryGetValue(parent.Value, out var np) ? np : null;
+                            }
+                            <option value="@c.CategoryId" selected="@(Model.CategoryId == c.CategoryId)">
+                                @Html.Raw(string.Concat(Enumerable.Repeat("&nbsp;&nbsp;", depth)))@c.Name
+                            </option>
+                        }
+                    </select>
+
+                    <label class="form-label small fw-semibold">Brand</label>
+                    <select class="form-select form-select-sm mb-3" name="brandId">
+                        <option value="">All brands</option>
+                        @foreach (var b in Model.Brands)
+                        {
+                            <option value="@b.BrandId" selected="@(Model.BrandId == b.BrandId)">@b.Name</option>
+                        }
+                    </select>
+
+                    <label class="form-label small fw-semibold">Price range</label>
+                    <div class="d-flex gap-2 mb-3">
+                        <input class="form-control form-control-sm" type="number" step="0.01" min="0"
+                               name="minPrice" placeholder="Min" value="@Model.MinPrice" />
+                        <input class="form-control form-control-sm" type="number" step="0.01" min="0"
+                               name="maxPrice" placeholder="Max" value="@Model.MaxPrice" />
+                    </div>
+
+                    <label class="form-label small fw-semibold">Rating</label>
+                    <select class="form-select form-select-sm mb-3" name="minRating">
+                        <option value="">Any rating</option>
+                        @for (var r = 5; r >= 1; r--)
+                        {
+                            <option value="@r" selected="@(Model.MinRating == r)">@r ★ and above</option>
+                        }
+                    </select>
+
+                    <button class="btn btn-accent btn-sm w-100" type="submit">Apply filters</button>
+                    <a class="btn btn-link btn-sm w-100" asp-controller="Product" asp-action="List">Reset</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product grid -->
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h5 mb-0 text-brand">@Model.Title</h1>
+                <span class="text-muted small">@Model.Total product(s) found</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small text-muted">Sort by</span>
+                <form method="get" asp-controller="Product" asp-action="List" id="sortForm">
+                    <input type="hidden" name="keyword" value="@Model.Keyword" />
+                    <input type="hidden" name="categoryId" value="@(Model.CategoryId ?? 0)" />
+                    <input type="hidden" name="brandId" value="@(Model.BrandId ?? 0)" />
+                    <input type="hidden" name="minPrice" value="@Model.MinPrice" />
+                    <input type="hidden" name="maxPrice" value="@Model.MaxPrice" />
+                    <input type="hidden" name="minRating" value="@Model.MinRating" />
+                    <select class="form-select form-select-sm" name="sort" onchange="this.form.submit()">
+                        <option value="featured" selected="@(string.IsNullOrEmpty(Model.Sort) || Model.Sort == "featured")">Featured (shop order)</option>
+                        <option value="newest" selected="@(Model.Sort == "newest")">Newest</option>
+                        <option value="price_asc" selected="@(Model.Sort == "price_asc")">Price low to high</option>
+                        <option value="price_desc" selected="@(Model.Sort == "price_desc")">Price high to low</option>
+                        <option value="rating" selected="@(Model.Sort == "rating")">Rating</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        @if (!Model.Items.Any())
+        {
+            <div class="alert alert-light border">No product matches the current filters.</div>
+        }
+
+        <div class="row g-3">
+            @foreach (var card in Model.Items)
+            {
+                <div class="col-6 col-md-4">
+                    <div class="card h-100 shadow-sm position-relative">
+                        <a asp-controller="Product" asp-action="Detail" asp-route-id="@card.Product.ProductId">
+                            <img class="card-img-top" style="width:100%;height:190px;object-fit:cover;display:block;"
+                                 src="@(card.Product.MainImage ?? "/images/products/.gitkeep")" alt="" />
+                        </a>
+                        <div class="card-body p-2">
+                            <div class="small text-truncate" title="@card.Product.ProductName">
+                                <a class="text-decoration-none text-dark stretched-link"
+                                   asp-controller="Product" asp-action="Detail"
+                                   asp-route-id="@card.Product.ProductId">@card.Product.ProductName</a>
+                            </div>
+                            <div class="small text-muted">@(card.Product.Brand?.Name ?? "No brand")</div>
+                            <div class="price">@card.MinPrice.ToString("0.00")</div>
+                            <div class="small text-muted d-flex justify-content-between">
+                                <span>
+                                    @if (card.ReviewCount > 0)
+                                    {
+                                        <span>@card.AvgRating.ToString("0.0") ★ (@card.ReviewCount)</span>
+                                    }
+                                    else
+                                    {
+                                        <span>No reviews</span>
+                                    }
+                                </span>
+                                <span>Sold @card.Product.SalesCount</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Pager -->
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-4">
+                <ul class="pagination pagination-sm justify-content-center">
+                    @for (var p = 1; p <= Model.TotalPages; p++)
+                    {
+                        <li class="page-item @(p == Model.Page ? "active" : "")">
+                            <a class="page-link"
+                               asp-controller="Product" asp-action="List"
+                               asp-route-keyword="@Model.Keyword"
+                               asp-route-categoryId="@Model.CategoryId"
+                               asp-route-brandId="@Model.BrandId"
+                               asp-route-minPrice="@Model.MinPrice"
+                               asp-route-maxPrice="@Model.MaxPrice"
+                               asp-route-minRating="@Model.MinRating"
+                               asp-route-sort="@Model.Sort"
+                               asp-route-page="@p">@p</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>

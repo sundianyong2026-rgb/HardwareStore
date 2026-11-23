@@ -1,0 +1,305 @@
+@model ProductDetailViewModel
+@using System.Text.Json
+@{
+    ViewData["Title"] = Model.Product.ProductName;
+    var skus = Model.Product.Skus.OrderBy(s => s.Price).ToList();
+    var attrGroups = Model.Product.Attributes.OrderBy(a => a.SortOrder)
+        .Where(a => a.Values.Any())
+        .Select(a => new { Name = a.Name, Values = a.Values.OrderBy(v => v.SortOrder).ToList() })
+        .ToList();
+    var hasAttributes = attrGroups.Any();
+    var skuJson = skus.Select(s => new
+    {
+        id = s.SkuId,
+        price = s.Price.ToString("0.00"),
+        stock = s.Stock,
+        ids = s.AttributeValueIds ?? ""
+    }).ToList();
+    var gallery = new List<string>();
+    if (!string.IsNullOrEmpty(Model.Product.MainImage)) gallery.Add(Model.Product.MainImage);
+    gallery.AddRange(Model.Product.Images.OrderBy(i => i.SortOrder).Select(i => i.ImageUrl));
+    if (!gallery.Any()) gallery.Add("/images/products/.gitkeep");
+}
+
+<div class="row g-4">
+    <!-- Gallery with mouse magnification -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm" style="overflow:hidden;">
+            <div class="zoom-wrap" style="overflow:hidden;">
+                <img id="mainImage" class="d-block w-100" style="height:420px;object-fit:cover;"
+                     src="@gallery[0]" alt="@Model.Product.ProductName" />
+            </div>
+            <div class="card-body text-center pt-3">
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    @for (var i = 0; i < gallery.Count; i++)
+                    {
+                        <img class="thumb @(i == 0 ? "border border-2 border-warning" : "")"
+                             style="width:64px;height:64px;object-fit:cover;cursor:pointer;"
+                             src="@gallery[i]" alt="" data-src="@gallery[i]" onclick="swapImage(this)" />
+                    }
+                </div>
+                <div class="small text-muted mt-2">Hover the main image to magnify.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase panel -->
+    <div class="col-lg-7">
+        <h1 class="h4 text-brand">@Model.Product.ProductName</h1>
+        <div class="small text-muted mb-2">
+            Brand: @(Model.Product.Brand?.Name ?? "—") |
+            Category: @(Model.Product.Category?.Name ?? "—") |
+            Shop: @(Model.Product.Merchant?.ShopName ?? "—")
+        </div>
+        <div class="mb-2">
+            @if (Model.ReviewCount > 0)
+            {
+                <span class="badge bg-warning text-dark">@Model.AvgRating.ToString("0.0") ★</span>
+                <span class="text-muted small">@Model.ReviewCount review(s)</span>
+            }
+            else
+            {
+                <span class="text-muted small">No review yet</span>
+            }
+            <span class="text-muted small ms-3">Sold: @Model.Product.SalesCount</span>
+        </div>
+
+        <div class="p-3 bg-white rounded shadow-sm mb-3">
+            <div class="d-flex align-items-end gap-2 mb-2">
+                <span class="price fs-3" id="priceLabel">@(skus.Any() ? skus[0].Price.ToString("0.00") : "0.00")</span>
+                <span class="text-muted small">per item</span>
+            </div>
+            <div class="small text-muted mb-3">
+                Stock: <span id="stockLabel">@(skus.Any() ? skus[0].Stock : 0)</span>
+            </div>
+
+            <form method="post" asp-controller="Cart" asp-action="Add" id="addForm">
+                <input type="hidden" name="productId" value="@Model.Product.ProductId" />
+                @if (hasAttributes)
+                {
+                    <label class="form-label small fw-semibold">Choose your options</label>
+                    <input type="hidden" name="skuId" id="skuIdInput" value="" />
+                    <div class="mb-2">
+                        @for (var ai = 0; ai < attrGroups.Count; ai++)
+                        {
+                            <div class="mb-2">
+                                <div class="small text-muted">@attrGroups[ai].Name</div>
+                                <div class="d-flex flex-wrap gap-2" data-attr="@ai">
+                                    @for (var vi = 0; vi < attrGroups[ai].Values.Count; vi++)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary attr-value"
+                                                data-attr="@ai" data-value="@attrGroups[ai].Values[vi].ValueId">
+                                            @attrGroups[ai].Values[vi].Value
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="small mb-3" id="comboHint"></div>
+                }
+                else
+                {
+                    <label class="form-label small fw-semibold">Specification</label>
+                    <div class="mb-3 d-flex flex-wrap gap-2">
+                        @if (skus.Any())
+                        {
+                            foreach (var sku in skus)
+                            {
+                                <label class="btn btn-outline-secondary btn-sm sku-option">
+                                    <input type="radio" name="skuId" value="@sku.SkuId" class="d-none"
+                                           data-price="@sku.Price.ToString("0.00")" data-stock="@sku.Stock"
+                                           checked="@(sku == skus[0])" />
+                                    @sku.SkuSpec
+                                </label>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-danger small">This product has no specification yet.</span>
+                        }
+                    </div>
+                }
+
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <label class="form-label small fw-semibold mb-0">Quantity</label>
+                    <input class="form-control form-control-sm" style="width:100px;" type="number"
+                           name="quantity" value="1" min="1" max="999" />
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-accent" type="submit" @(skus.Any() ? "" : "disabled")>Add to cart</button>
+                </div>
+            </form>
+
+            <div class="d-flex gap-2 mt-2">
+                <form method="post" asp-controller="User" asp-action="ToggleFavorite">
+                    <input type="hidden" name="productId" value="@Model.Product.ProductId" />
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">
+                        @(Model.IsFavorite ? "★ In favourites" : "☆ Add to favourites")
+                    </button>
+                </form>
+                @if (Model.Product.MerchantId > 0)
+                {
+                    <a class="btn btn-outline-primary btn-sm"
+                       asp-controller="Message" asp-action="Chat"
+                       asp-route-peerRole="merchant" asp-route-peerId="@Model.Product.MerchantId"
+                       asp-route-productId="@Model.Product.ProductId">
+                        <i class="bi bi-chat-dots"></i> Contact the seller
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Description</div>
+            <div class="card-body small" style="white-space: pre-wrap;">@(Model.Product.Description ?? "No description.")</div>
+        </div>
+    </div>
+</div>
+
+<!-- Reviews -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <span class="fw-semibold">Customer reviews (@Model.ReviewCount)</span>
+        <div class="d-flex gap-1 flex-wrap">
+            <a class="btn btn-sm @(Model.RatingFilter == null ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Product" asp-action="Detail" asp-route-id="@Model.Product.ProductId">All</a>
+            @for (var r = 5; r >= 1; r--)
+            {
+                <a class="btn btn-sm @(Model.RatingFilter == r ? "btn-accent" : "btn-outline-secondary")"
+                   asp-controller="Product" asp-action="Detail" asp-route-id="@Model.Product.ProductId"
+                   asp-route-rating="@r">@r ★</a>
+            }
+        </div>
+    </div>
+    <div class="card-body">
+        @if (!Model.Reviews.Any())
+        {
+            <div class="text-muted small">No review for this filter.</div>
+        }
+        @foreach (var review in Model.Reviews)
+        {
+            <div class="border-bottom pb-2 mb-2">
+                <div class="d-flex justify-content-between">
+                    <div class="fw-semibold small">@(review.Customer?.Username ?? "Customer")</div>
+                    <div class="small text-muted">@review.CreatedAt.ToString("yyyy-MM-dd")</div>
+                </div>
+                <div class="text-warning small">
+                    @for (var i = 0; i < review.Rating; i++)
+                    {
+                        <span>★</span>
+                    }
+                </div>
+                <div class="small">@review.Content</div>
+                @if (!string.IsNullOrEmpty(review.ImageUrl))
+                {
+                    <img src="@review.ImageUrl" class="thumb mt-1" style="width:96px;height:96px;" alt="" />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Multi attribute selector: every group starts on its first value and the
+    // matching combination drives the price, the stock and the hidden skuId.
+    (function () {
+        var allSkus = @Html.Raw(JsonSerializer.Serialize(skuJson));
+        var groups = Array.prototype.slice.call(document.querySelectorAll('[data-attr]'));
+        var container = groups.filter(function (g) {
+            return g.querySelectorAll('.attr-value').length > 0;
+        });
+
+        if (!container.length || !document.getElementById('skuIdInput')) return;
+
+        var buttons = Array.prototype.slice.call(document.querySelectorAll('.attr-value'));
+        var selected = {};
+        var addBtn = document.querySelector('#addForm button[type="submit"]');
+        var hint = document.getElementById('comboHint');
+
+        buttons.forEach(function (btn) {
+            var ai = btn.dataset.attr;
+            if (selected[ai] === undefined) selected[ai] = btn.dataset.value;
+
+            btn.addEventListener('click', function () {
+                selected[ai] = btn.dataset.value;
+                paint();
+            });
+        });
+
+        function paint() {
+            var count = container.length;
+
+            buttons.forEach(function (btn) {
+                var on = selected[btn.dataset.attr] === btn.dataset.value;
+                btn.classList.toggle('btn-accent', on);
+                btn.classList.toggle('btn-outline-secondary', !on);
+            });
+
+            var ids = [];
+            for (var a = 0; a < count; a++) ids.push(selected[String(a)]);
+
+            var match = null;
+            allSkus.forEach(function (sku) {
+                var own = sku.ids ? String(sku.ids).split(',') : [];
+                if (own.length === ids.length && own.every(function (id, i) { return id === ids[i]; })) {
+                    match = sku;
+                }
+            });
+
+            if (match) {
+                document.getElementById('skuIdInput').value = match.id;
+                document.getElementById('priceLabel').textContent = match.price;
+                document.getElementById('stockLabel').textContent = match.stock;
+                if (hint) hint.textContent = '';
+                if (addBtn) addBtn.disabled = false;
+            } else {
+                document.getElementById('skuIdInput').value = '';
+                document.getElementById('priceLabel').textContent = '—';
+                document.getElementById('stockLabel').textContent = '0';
+                if (hint) hint.textContent = 'This combination is not available right now.';
+                if (addBtn) addBtn.disabled = true;
+            }
+        }
+
+        paint();
+    })();
+
+    // SKU selection updates the displayed price and stock.
+    document.querySelectorAll('input[name="skuId"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            document.getElementById('priceLabel').textContent = radio.dataset.price;
+            document.getElementById('stockLabel').textContent = radio.dataset.stock;
+            document.querySelectorAll('.sku-option').forEach(function (l) { l.classList.remove('btn-accent'); l.classList.add('btn-outline-secondary'); });
+            radio.parentElement.classList.remove('btn-outline-secondary');
+            radio.parentElement.classList.add('btn-accent');
+        });
+        if (radio.checked) {
+            radio.parentElement.classList.add('btn-accent');
+        }
+    });
+
+    // Thumbnail switching.
+    function swapImage(el) {
+        document.getElementById('mainImage').src = el.dataset.src;
+    }
+
+    // Mouse magnifier on the main image.
+    (function () {
+        const img = document.getElementById('mainImage');
+        if (!img) return;
+        img.addEventListener('mousemove', function (e) {
+            const rect = img.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width * 100;
+            const y = (e.clientY - rect.top) / rect.height * 100;
+            img.style.transformOrigin = x + '% ' + y + '%';
+            img.style.transform = 'scale(1.8)';
+        });
+        img.addEventListener('mouseleave', function () {
+            img.style.transform = 'scale(1)';
+        });
+    })();
+</script>
+}

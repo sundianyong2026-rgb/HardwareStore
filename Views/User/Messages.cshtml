@@ -1,0 +1,46 @@
+@model List<ContactMessage>
+@{
+    ViewData["Title"] = "Support messages";
+}
+
+<h1 class="h4 mb-3 text-brand">Support messages</h1>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        @if (!Model.Any())
+        {
+            <div class="alert alert-light border">No message yet.</div>
+        }
+        @foreach (var m in Model)
+        {
+            <div class="card shadow-sm mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>@m.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                        <span class="badge @(m.Status == "answered" ? "bg-success" : "bg-warning text-dark")">@m.Status</span>
+                    </div>
+                    <div class="small mt-1">@m.Content</div>
+                    @if (!string.IsNullOrEmpty(m.Reply))
+                    {
+                        <div class="alert alert-light border mt-2 mb-0 small">
+                            <strong>Support reply:</strong> @m.Reply
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">New message</div>
+            <div class="card-body">
+                <form method="post" asp-controller="User" asp-action="SendMessage">
+                    <textarea class="form-control mb-2" name="content" rows="4" required
+                              placeholder="Describe your question..."></textarea>
+                    <button class="btn btn-accent btn-sm w-100" type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

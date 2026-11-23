@@ -1,0 +1,45 @@
+@model List<ContactMessage>
+@{
+    ViewData["Title"] = "Support messages";
+    ViewBag.AdminMenu = "messages";
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Support messages</h1>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-light border">No message.</div>
+        }
+
+        @foreach (var m in Model)
+        {
+            <div class="card shadow-sm mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between small text-muted">
+                        <span>@(m.Customer?.Username) | @m.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                        <span class="badge @(m.Status == "answered" ? "bg-success" : "bg-warning text-dark")">@m.Status</span>
+                    </div>
+                    <div class="small mt-1">@m.Content</div>
+
+                    @if (!string.IsNullOrEmpty(m.Reply))
+                    {
+                        <div class="alert alert-light border mt-2 mb-2 small">
+                            <strong>Reply:</strong> @m.Reply
+                        </div>
+                    }
+                    else
+                    {
+                        <form class="d-flex gap-2 mt-2" method="post" asp-controller="Admin" asp-action="ReplyMessage">
+                            <input type="hidden" name="messageId" value="@m.MessageId" />
+                            <input class="form-control form-control-sm" name="reply" placeholder="Write a reply..." required />
+                            <button class="btn btn-sm btn-accent" type="submit">Send</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

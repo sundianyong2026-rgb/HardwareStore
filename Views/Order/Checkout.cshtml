@@ -1,0 +1,175 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<h1 class="h4 mb-3 text-brand">Checkout</h1>
+
+<form method="post" asp-controller="Order" asp-action="Place">
+    <input type="hidden" name="selectedIds" value="@Model.SelectedIds" />
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Delivery address</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="toggleAddressForm">
+                        Add new address
+                    </button>
+                </div>
+                <div class="card-body">
+                    @if (!Model.Addresses.Any())
+                    {
+                        <div class="text-muted small">
+                            You have no address yet. Use "Add new address" to create one.
+                        </div>
+                    }
+                    @foreach (var a in Model.Addresses)
+                    {
+                        <div class="form-check border rounded p-2 mb-2 d-flex justify-content-between align-items-start">
+                            <div>
+                                <input class="form-check-input" type="radio" name="addressId" value="@a.AddressId"
+                                       id="addr_@a.AddressId"
+                                       checked="@(a.AddressId == Model.AddressId)" required />
+                                <label class="form-check-label small" for="addr_@a.AddressId">
+                                    <strong>@a.ReceiverName</strong> @a.Phone<br />
+                                    @a.AddressDetail
+                                    @if (a.IsDefault)
+                                    {
+                                        <span class="badge bg-secondary ms-1">Default</span>
+                                    }
+                                </label>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary edit-checkout-address"
+                                    data-id="@a.AddressId"
+                                    data-receiver="@a.ReceiverName"
+                                    data-phone="@a.Phone"
+                                    data-detail="@a.AddressDetail"
+                                    data-default="@(a.IsDefault ? "true" : "false")">Edit</button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-semibold">Order items</div>
+                <div class="table-responsive">
+                    <table class="table mb-0 align-middle">
+                        <thead class="table-light">
+                        <tr><th>Product</th><th>Specification</th><th>Price</th><th>Qty</th><th>Subtotal</th></tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr>
+                                <td class="small">@line.Product.ProductName</td>
+                                <td class="small">@line.Sku?.SkuSpec</td>
+                                <td class="small">@line.Sku?.Price.ToString("0.00")</td>
+                                <td class="small">@line.Item.Quantity</td>
+                                <td class="price small">@line.Subtotal.ToString("0.00")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-semibold">Summary</div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Goods total</span><span>@Model.GoodsTotal.ToString("0.00")</span>
+                    </div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Shipping</span>
+                        <span>@(Model.ShippingFee == 0 ? "Free" : Model.ShippingFee.ToString("0.00"))</span>
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-semibold">Pay total</span>
+                        <span class="price fs-5">@Model.PayTotal.ToString("0.00")</span>
+                    </div>
+                    <div class="small text-muted mt-2">Payment is simulated in this demo project.</div>
+                    <button class="btn btn-accent w-100 mt-3" type="submit"
+                            @(Model.Addresses.Any() ? "" : "disabled")>Place order</button>
+                    <a class="btn btn-link btn-sm w-100" asp-controller="Cart" asp-action="Index">Back to cart</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<!-- Address form lives outside the checkout form: nested forms are not allowed -->
+<div class="card shadow-sm mt-3 d-none" id="checkoutAddressCard">
+    <div class="card-header bg-white fw-semibold" id="checkoutAddressTitle">Add a new address</div>
+    <div class="card-body">
+        <form method="post" asp-controller="User" asp-action="SaveAddress" id="checkoutAddressForm">
+            <input type="hidden" name="addressId" id="coAddressId" value="0" />
+            <input type="hidden" name="returnUrl"
+                   value="@Url.Action("Checkout", "Order", new { ids = Model.SelectedIds })" />
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <label class="form-label small">Receiver *</label>
+                    <input class="form-control form-control-sm" name="receiverName" id="coReceiver" required maxlength="100" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Phone</label>
+                    <input class="form-control form-control-sm" name="phone" id="coPhone" maxlength="20" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="isDefault" value="true" id="coDefault" />
+                        <label class="form-check-label small" for="coDefault">Set as default</label>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label small">Address *</label>
+                    <input class="form-control form-control-sm" name="addressDetail" id="coDetail" required maxlength="255" />
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-accent btn-sm w-100" type="submit" id="coSubmit">Save address</button>
+                </div>
+            </div>
+            <button class="btn btn-link btn-sm mt-2 p-0" type="button" id="coCancel">Cancel</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var card = document.getElementById('checkoutAddressCard');
+        var title = document.getElementById('checkoutAddressTitle');
+        var form = document.getElementById('checkoutAddressForm');
+        var submit = document.getElementById('coSubmit');
+
+        function openForm(id, receiver, phone, detail, isDefault) {
+            form.reset();
+            document.getElementById('coAddressId').value = id || '0';
+            document.getElementById('coReceiver').value = receiver || '';
+            document.getElementById('coPhone').value = phone || '';
+            document.getElementById('coDetail').value = detail || '';
+            document.getElementById('coDefault').checked = isDefault === 'true';
+            title.textContent = id && id !== '0' ? 'Edit address' : 'Add a new address';
+            submit.textContent = id && id !== '0' ? 'Update address' : 'Save address';
+            card.classList.remove('d-none');
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        document.getElementById('toggleAddressForm').addEventListener('click', function () {
+            openForm('0', '', '', '', 'false');
+        });
+
+        document.querySelectorAll('.edit-checkout-address').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                openForm(btn.dataset.id, btn.dataset.receiver, btn.dataset.phone,
+                    btn.dataset.detail, btn.dataset.default);
+            });
+        });
+
+        document.getElementById('coCancel').addEventListener('click', function () {
+            card.classList.add('d-none');
+        });
+    })();
+</script>

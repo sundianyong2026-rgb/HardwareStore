@@ -1,0 +1,95 @@
+@model Customer
+@{
+    ViewData["Title"] = "My account";
+}
+
+<h1 class="h4 mb-3 text-brand">My account</h1>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h6 text-brand">@(string.IsNullOrWhiteSpace(Model.FullName) ? Model.Username : Model.FullName)</h2>
+                <div class="small text-muted">@Model.Username</div>
+                <div class="small text-muted">Registered: @Model.RegisteredAt.ToString("yyyy-MM-dd")</div>
+                <hr />
+                <div class="d-grid gap-2">
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Order" asp-action="MyOrders">
+                        Orders (@ViewBag.OrderCount)
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="User" asp-action="Favorites">
+                        Favourites (@ViewBag.FavoriteCount)
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="User" asp-action="History">
+                        Browsing history (@ViewBag.HistoryCount)
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="User" asp-action="Addresses">Address book</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Message" asp-action="Index">Messages</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header bg-white fw-semibold">Profile</div>
+            <div class="card-body">
+                <form method="post" asp-controller="User" asp-action="UpdateProfile">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small">Full name</label>
+                            <input class="form-control" name="fullName" value="@Model.FullName" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small">Phone</label>
+                            <input class="form-control" name="phone" value="@Model.Phone" />
+                        </div>
+                    </div>
+                    <button class="btn btn-accent btn-sm" type="submit">Save changes</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Change password</div>
+            <div class="card-body">
+                <form method="post" asp-controller="User" asp-action="ChangePassword">
+                    <div class="mb-3">
+                        <label class="form-label small">New password</label>
+                        <input class="form-control" type="password" name="newPassword" required />
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">Update password</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-3 border-danger">
+            <div class="card-header bg-white fw-semibold text-danger">Close my account</div>
+            <div class="card-body">
+                @if (Model.DeletionRequestedAt != null)
+                {
+                    <div class="alert alert-warning small mb-2">
+                        A closure request was sent on @Model.DeletionRequestedAt.Value.ToString("yyyy-MM-dd HH:mm")
+                        and is waiting for the administrator. You cannot sign in until it is decided.
+                    </div>
+                    <form method="post" asp-controller="User" asp-action="CancelDeletion"
+                          onsubmit="return confirm('Withdraw the closure request?')">
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Withdraw request</button>
+                    </form>
+                }
+                else
+                {
+                    <p class="small text-muted">
+                        You can only ask for closure when every order is completed or cancelled.
+                        After the request your account is disabled and the administrator decides
+                        whether the account is removed.
+                    </p>
+                    <form method="post" asp-controller="User" asp-action="RequestDeletion"
+                          onsubmit="return confirm('Send the account closure request?')">
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Request account closure</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

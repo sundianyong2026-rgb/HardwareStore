@@ -1,0 +1,55 @@
+@model OrderInfo
+@{
+    ViewData["Title"] = "Order " + Model.OrderNo;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h5 mb-0 text-brand">Order @Model.OrderNo</h1>
+    <a class="btn btn-sm btn-outline-secondary" asp-controller="Order" asp-action="MyOrders">Back</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Items</div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                    <tr><th>Product</th><th>Spec</th><th>Unit price</th><th>Qty</th><th>Subtotal</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td class="small">@item.Product?.ProductName</td>
+                            <td class="small">@item.SkuSpecSnapshot</td>
+                            <td class="small">@item.UnitPrice.ToString("0.00")</td>
+                            <td class="small">@item.Quantity</td>
+                            <td class="price small">@item.Subtotal.ToString("0.00")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold">Information</div>
+            <div class="card-body small">
+                <div class="mb-1">Status: <strong>@Model.Status</strong></div>
+                <div class="mb-1">Shop: @(Model.Merchant?.ShopName)</div>
+                <div class="mb-1">Receiver: @Model.ReceiverName (@Model.Phone)</div>
+                <div class="mb-1">Address: @Model.AddressDetail</div>
+                <div class="mb-1">Created: @Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</div>
+                @if (Model.PaidAt != null)
+                {
+                    <div class="mb-1">Paid: @Model.PaidAt.Value.ToString("yyyy-MM-dd HH:mm")</div>
+                }
+                <hr />
+                <div class="d-flex justify-content-between"><span>Shipping</span><span>@Model.ShippingFee.ToString("0.00")</span></div>
+                <div class="d-flex justify-content-between"><span class="fw-semibold">Total</span><span class="price">@Model.TotalAmount.ToString("0.00")</span></div>
+            </div>
+        </div>
+    </div>
+</div>

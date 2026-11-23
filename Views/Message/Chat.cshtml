@@ -1,0 +1,99 @@
+﻿@model List<HardwareStore.Models.Entities.Message>
+@{
+    ViewData["Title"] = "Chat";
+    var peerRole = ViewBag.PeerRole as string ?? "";
+    var peerId = (int)(ViewBag.PeerId ?? 0);
+    var peerName = ViewBag.PeerName as string ?? "Chat";
+    var myRole = ViewBag.MyRole as string ?? "";
+    var product = ViewBag.Product;
+    var total = (int)(ViewBag.Conversation ?? 0);
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h5 text-brand mb-0">@peerName</h1>
+                <div class="small text-muted">
+                    @(peerRole == "merchant" ? "Seller" : peerRole == "admin" ? "Platform support" : "Customer")
+                    @if (product != null)
+                    {
+                        <span>· about “@product.ProductName”</span>
+                    }
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <a class="btn btn-sm btn-outline-secondary" asp-controller="Message" asp-action="Index">All chats</a>
+                @if (total > 0)
+                {
+                    <form method="post" asp-controller="Message" asp-action="Clear"
+                          onsubmit="return confirm('Clear this conversation? The other side keeps its own copy.')">
+                        <input type="hidden" name="peerRole" value="@peerRole" />
+                        <input type="hidden" name="peerId" value="@peerId" />
+                        <button class="btn btn-sm btn-outline-danger" type="submit">Clear chat</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+            <div class="card-body" style="max-height:520px; overflow-y:auto;">
+                @if (!Model.Any())
+                {
+                    <div class="text-muted small">No message yet. Write the first one below.</div>
+                }
+
+                @foreach (var m in Model)
+                {
+                    var mine = m.SenderRole == myRole;
+                    <div class="d-flex mb-3 @(mine ? "justify-content-end" : "")">
+                        <div class="p-2 px-3 rounded border @(mine ? "bg-light" : "bg-white")" style="max-width:80%;">
+                            <div class="small text-muted d-flex justify-content-between gap-3">
+                                <span>@(mine ? "Me" : m.SenderName)</span>
+                                <span>@m.CreatedAt.ToString("MM-dd HH:mm")</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(m.ProductName))
+                            {
+                                <div class="small text-brand">Re: @m.ProductName</div>
+                            }
+                            <div class="small" style="white-space:pre-wrap;">@m.Body</div>
+                            <form method="post" asp-controller="Message" asp-action="Delete" class="mt-1"
+                                  onsubmit="return confirm('Delete this message for you only?')">
+                                <input type="hidden" name="messageId" value="@m.MessageId" />
+                                <input type="hidden" name="peerRole" value="@peerRole" />
+                                <input type="hidden" name="peerId" value="@peerId" />
+                                <button class="btn btn-sm btn-link text-danger p-0 small" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <form method="post" asp-controller="Message" asp-action="Send" class="card shadow-sm">
+            <div class="card-body">
+                <textarea class="form-control mb-2" name="body" rows="3" required
+                          placeholder="Write a message..."></textarea>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="small text-muted">
+                        @if (product != null)
+                        {
+                            <span>Sending about “@product.ProductName”</span>
+                        }
+                        else
+                        {
+                            <span>Be clear about the order number or product name.</span>
+                        }
+                    </div>
+                    <button class="btn btn-sm btn-accent" type="submit">Send</button>
+                </div>
+            </div>
+            <input type="hidden" name="peerRole" value="@peerRole" />
+            <input type="hidden" name="peerId" value="@peerId" />
+            @if (product != null)
+            {
+                <input type="hidden" name="productId" value="@product.ProductId" />
+            }
+        </form>
+    </div>
+</div>

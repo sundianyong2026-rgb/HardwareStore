@@ -1,0 +1,24 @@
+@{
+    var current = ViewBag.AdminMenu as string ?? "";
+}
+<div class="card shadow-sm sidebar">
+    <div class="card-header bg-white fw-semibold text-brand">Administrator</div>
+    <div class="list-group list-group-flush">
+        <a class="list-group-item list-group-item-action @(current == "dashboard" ? "active" : "")"
+           asp-controller="Admin" asp-action="Index">Dashboard</a>
+        <a class="list-group-item list-group-item-action @(current == "merchants" ? "active" : "")"
+           asp-controller="Admin" asp-action="Merchants">Merchants</a>
+        <a class="list-group-item list-group-item-action @(current == "catalog" ? "active" : "")"
+           asp-controller="Admin" asp-action="Catalog">Categories &amp; brands</a>
+        <a class="list-group-item list-group-item-action @(current == "content" ? "active" : "")"
+           asp-controller="Admin" asp-action="Content">Banners &amp; notices</a>
+        <a class="list-group-item list-group-item-action @(current == "reviews" ? "active" : "")"
+           asp-controller="Admin" asp-action="Reviews">Review moderation</a>
+        <a class="list-group-item list-group-item-action @(current == "customers" ? "active" : "")"
+           asp-controller="Admin" asp-action="Customers">Customers</a>
+        <a class="list-group-item list-group-item-action @(current == "stats" ? "active" : "")"
+           asp-controller="Admin" asp-action="Stats">Statistics</a>
+        <a class="list-group-item list-group-item-action @(current == "messages" ? "active" : "")"
+           asp-controller="Message" asp-action="Index">Messages</a>
+    </div>
+</div>

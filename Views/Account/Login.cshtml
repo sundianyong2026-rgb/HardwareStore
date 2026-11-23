@@ -1,0 +1,109 @@
+@{
+    var role = ViewBag.Role as string ?? "customer";
+}
+<h1 class="h4 mb-3 text-brand">Sign in</h1>
+
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<div class="card shadow-sm" style="max-width: 500px;">
+    <div class="card-body">
+        <!-- Three sign-in forms on one page: customer, merchant and administrator -->
+        <ul class="nav nav-tabs mb-4" id="loginTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(role != "merchant" && role != "admin" ? "active" : null)" id="customerTab"
+                        data-bs-toggle="tab" data-bs-target="#customerPane" type="button" role="tab">
+                    <i class="bi bi-person"></i> Customer
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(role == "merchant" ? "active" : null)" id="merchantTab"
+                        data-bs-toggle="tab" data-bs-target="#merchantPane" type="button" role="tab">
+                    <i class="bi bi-shop"></i> Merchant
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(role == "admin" ? "active" : null)" id="adminTab"
+                        data-bs-toggle="tab" data-bs-target="#adminPane" type="button" role="tab">
+                    <i class="bi bi-shield-lock"></i> Administrator
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Customer sign-in -->
+            <div class="tab-pane fade @(role != "merchant" && role != "admin" ? "show active" : null)"
+                 id="customerPane" role="tabpanel">
+                <form method="post" asp-controller="Account" asp-action="Login">
+                    <input type="hidden" name="role" value="customer" />
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input class="form-control" name="username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input class="form-control" type="password" name="password" required />
+                    </div>
+                    <button class="btn btn-accent w-100" type="submit">Sign in as customer</button>
+                </form>
+            </div>
+
+            <!-- Merchant sign-in: e-mail or phone number -->
+            <div class="tab-pane fade @(role == "merchant" ? "show active" : null)"
+                 id="merchantPane" role="tabpanel">
+                <form method="post" asp-controller="Account" asp-action="Login">
+                    <input type="hidden" name="role" value="merchant" />
+                    <div class="mb-3">
+                        <label class="form-label">E-mail or phone number</label>
+                        <input class="form-control" name="username" required
+                               placeholder="techstore@example.com or +375 29 000 0002" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input class="form-control" type="password" name="password" required />
+                    </div>
+                    <button class="btn btn-accent w-100" type="submit">Sign in as merchant</button>
+                </form>
+                <div class="alert alert-light border small mt-3 mb-0">
+                    Merchant accounts must be approved by the administrator before sign-in.
+                    <a asp-controller="Account" asp-action="Register" asp-route-type="merchant">Apply to open a shop</a>
+                </div>
+            </div>
+
+            <div class="tab-pane fade @(role == "admin" ? "show active" : null)" id="adminPane" role="tabpanel">
+                <form method="post" asp-controller="Account" asp-action="Login">
+                    <input type="hidden" name="role" value="admin" />
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input class="form-control" name="username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input class="form-control" type="password" name="password" required />
+                    </div>
+                    <button class="btn btn-accent w-100" type="submit">Sign in as administrator</button>
+                </form>
+                <div class="alert alert-light border small mt-3 mb-0">
+                    Platform administrator account, used to review merchant applications and manage the catalogue.
+                </div>
+            </div>
+        </div>
+
+        <hr />
+        <div class="small text-muted">
+            <div>Demo accounts:</div>
+            <div>customer / Customer@@123</div>
+            <div>techstore@example.com or +375 29 000 0002 / Merchant@@123</div>
+            <div>admin / Admin@@123</div>
+        </div>
+
+        <div class="mt-3 small">
+            Don't have an account?
+            <a asp-controller="Account" asp-action="Register">Register</a>
+            <span class="text-muted"> | </span>
+            <a asp-controller="Account" asp-action="Register" asp-route-type="merchant">Open a shop</a>
+        </div>
+    </div>
+</div>

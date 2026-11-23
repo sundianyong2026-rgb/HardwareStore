@@ -1,0 +1,84 @@
+@model OrderItem
+@{
+    ViewData["Title"] = "Write a review";
+}
+
+<h1 class="h4 mb-3 text-brand">Review your purchase</h1>
+
+<div class="card shadow-sm" style="max-width: 640px;">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            <img class="thumb me-2" src="@(Model.Product?.MainImage ?? "/images/products/.gitkeep")" alt="" />
+            <div>
+                <div class="fw-semibold small">@Model.Product?.ProductName</div>
+                <div class="text-muted small">Spec: @Model.SkuSpecSnapshot</div>
+            </div>
+        </div>
+
+        <form method="post" asp-controller="Review" asp-action="Create">
+            <input type="hidden" name="orderItemId" value="@Model.OrderItemId" />
+            <input type="hidden" name="croppedImage" id="croppedImage" />
+
+            <label class="form-label small fw-semibold">Rating</label>
+            <div class="mb-3">
+                <select class="form-select" name="rating" required>
+                    <option value="5">5 ★ excellent</option>
+                    <option value="4">4 ★ good</option>
+                    <option value="3">3 ★ average</option>
+                    <option value="2">2 ★ poor</option>
+                    <option value="1">1 ★ very poor</option>
+                </select>
+            </div>
+
+            <label class="form-label small fw-semibold">Comment</label>
+            <textarea class="form-control mb-3" name="content" rows="4" placeholder="Share your experience..."></textarea>
+
+            <label class="form-label small fw-semibold">Photo (optional, cropped in the browser)</label>
+            <input class="form-control mb-2" type="file" accept="image/*" id="fileInput" />
+            <div id="cropArea" class="mb-2" style="display:none;">
+                <img id="cropImage" style="max-width:100%;" alt="" />
+            </div>
+            <button class="btn btn-outline-secondary btn-sm mb-3" type="button" id="cropBtn"
+                    style="display:none;">Apply crop</button>
+
+            <div class="d-grid">
+                <button class="btn btn-accent" type="submit">Publish review</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.css" rel="stylesheet" />
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.1/dist/cropper.min.js"></script>
+<script>
+    let cropper = null;
+    const fileInput = document.getElementById('fileInput');
+    const cropImage = document.getElementById('cropImage');
+    const cropArea = document.getElementById('cropArea');
+    const cropBtn = document.getElementById('cropBtn');
+
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            cropImage.src = e.target.result;
+            cropArea.style.display = 'block';
+            cropBtn.style.display = 'inline-block';
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(cropImage, { aspectRatio: 1, viewMode: 1, autoCropArea: 1 });
+        };
+        reader.readAsDataURL(file);
+    });
+
+    cropBtn.addEventListener('click', function () {
+        if (!cropper) return;
+        const canvas = cropper.getCroppedCanvas({ width: 800, height: 800 });
+        document.getElementById('croppedImage').value = canvas.toDataURL('image/jpeg', 0.85);
+        cropBtn.textContent = 'Crop applied';
+        cropBtn.classList.remove('btn-outline-secondary');
+        cropBtn.classList.add('btn-success');
+    });
+</script>
+}

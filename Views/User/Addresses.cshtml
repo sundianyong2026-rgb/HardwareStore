@@ -1,0 +1,112 @@
+﻿@model List<Address>
+@{
+    ViewData["Title"] = "Address book";
+}
+
+<h1 class="h4 mb-3 text-brand">Address book</h1>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        @if (!Model.Any())
+        {
+            <div class="alert alert-light border">No address yet.</div>
+        }
+        @foreach (var a in Model)
+        {
+            <div class="card shadow-sm mb-2">
+                <div class="card-body d-flex justify-content-between align-items-start">
+                    <div class="small">
+                        <div class="fw-semibold">@a.ReceiverName @a.Phone</div>
+                        <div class="text-muted">@a.AddressDetail</div>
+                        @if (a.IsDefault)
+                        {
+                            <span class="badge bg-secondary mt-1">Default</span>
+                        }
+                    </div>
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary edit-address"
+                                data-id="@a.AddressId"
+                                data-receiver="@a.ReceiverName"
+                                data-phone="@a.Phone"
+                                data-detail="@a.AddressDetail"
+                                data-default="@(a.IsDefault ? "true" : "false")">Edit</button>
+                        <form method="post" asp-controller="User" asp-action="SetDefaultAddress">
+                            <input type="hidden" name="addressId" value="@a.AddressId" />
+                            <button class="btn btn-sm btn-outline-secondary" type="submit"
+                                    @(a.IsDefault ? "disabled" : "")>Set default</button>
+                        </form>
+                        <form method="post" asp-controller="User" asp-action="DeleteAddress"
+                              onsubmit="return confirm('Delete this address?')">
+                            <input type="hidden" name="addressId" value="@a.AddressId" />
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white fw-semibold" id="addressFormTitle">Add an address</div>
+            <div class="card-body">
+                <form method="post" asp-controller="User" asp-action="SaveAddress" id="addressForm">
+                    <input type="hidden" name="addressId" id="addressId" value="0" />
+                    <div class="mb-3">
+                        <label class="form-label small">Receiver *</label>
+                        <input class="form-control" name="receiverName" id="receiverName" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Phone</label>
+                        <input class="form-control" name="phone" id="phone" maxlength="20" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Address *</label>
+                        <textarea class="form-control" name="addressDetail" id="addressDetail" rows="3" required maxlength="255"></textarea>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="isDefault" value="true" id="isDefault" />
+                        <label class="form-check-label small" for="isDefault">Set as default address</label>
+                    </div>
+                    <button class="btn btn-accent btn-sm w-100" type="submit" id="addressSubmit">Save address</button>
+                    <button class="btn btn-outline-secondary btn-sm w-100 mt-2 d-none" type="button" id="addressCancel">
+                        Cancel editing
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var form = document.getElementById('addressForm');
+        var title = document.getElementById('addressFormTitle');
+        var submit = document.getElementById('addressSubmit');
+        var cancel = document.getElementById('addressCancel');
+
+        function resetForm() {
+            form.reset();
+            document.getElementById('addressId').value = '0';
+            title.textContent = 'Add an address';
+            submit.textContent = 'Save address';
+            cancel.classList.add('d-none');
+        }
+
+        document.querySelectorAll('.edit-address').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('addressId').value = btn.dataset.id;
+                document.getElementById('receiverName').value = btn.dataset.receiver || '';
+                document.getElementById('phone').value = btn.dataset.phone || '';
+                document.getElementById('addressDetail').value = btn.dataset.detail || '';
+                document.getElementById('isDefault').checked = btn.dataset.default === 'true';
+                title.textContent = 'Edit address #' + btn.dataset.id;
+                submit.textContent = 'Update address';
+                cancel.classList.remove('d-none');
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+        });
+
+        cancel.addEventListener('click', resetForm);
+    })();
+</script>

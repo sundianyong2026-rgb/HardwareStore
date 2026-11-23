@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@(ViewData["Title"] ?? "Hardware Store")</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <style>
+        :root { --brand: #1f3a5f; --accent: #f08c00; }
+        .navbar-brand { font-weight: 700; color: var(--brand) !important; }
+        .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .btn-accent:hover { background: #d97706; border-color: #d97706; color: #fff; }
+        .text-brand { color: var(--brand); }
+        .card-stat { border-top: 3px solid var(--brand); }
+        .price { color: #d9480f; font-weight: 700; }
+        .sidebar { border-right: 1px solid #e9ecef; min-height: 80vh; }
+        .sidebar .nav-link { color: #495057; border-radius: .4rem; }
+        .sidebar .nav-link.active { background: var(--brand); color: #fff; }
+        .thumb { width: 56px; height: 56px; object-fit: cover; border-radius: .4rem; background: #f1f3f5; }
+        .thumb-lg { width: 100%; height: 340px; object-fit: contain; background: #fff; }
+        .suggest-box { position: absolute; z-index: 1050; background: #fff; border: 1px solid #dee2e6;
+                       border-radius: .4rem; width: 100%; max-height: 260px; overflow-y: auto; display: none; }
+        .suggest-item { padding: .4rem .6rem; cursor: pointer; }
+        .suggest-item:hover { background: #f1f3f5; }
+    </style>
+</head>
+<body class="bg-light">
+@{
+    var role = Context.Session.GetString("App_Role");
+    var userName = Context.Session.GetString("App_UserName");
+}
+<nav class="navbar navbar-expand-lg bg-white shadow-sm mb-4 sticky-top">
+    <div class="container">
+        <a class="navbar-brand" asp-controller="Home" asp-action="Index">Hardware Store</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-3">
+                <li class="nav-item"><a class="nav-link" asp-controller="Product" asp-action="List">Products</a></li>
+
+            </ul>
+
+            <div class="position-relative me-auto" style="min-width: 320px;">
+                <form class="d-flex" asp-controller="Product" asp-action="List" method="get">
+                    <input class="form-control me-2" type="search" name="keyword" id="searchInput"
+                           placeholder="Search products..." autocomplete="off" value="@Context.Request.Query["keyword"]" />
+                    <button class="btn btn-accent" type="submit"><i class="bi bi-search"></i></button>
+                </form>
+                <div class="suggest-box" id="suggestBox"></div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                @if (role == "customer")
+                {
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Cart" asp-action="Index">
+                        <i class="bi bi-cart"></i> Cart
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Order" asp-action="MyOrders">Orders</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Message" asp-action="Index">
+                        <i class="bi bi-chat-dots"></i> Messages
+                    </a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="User" asp-action="Profile">@userName</a>
+                    <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Logout</a>
+                }
+                else if (role == "merchant")
+                {
+                    <a class="btn btn-outline-primary btn-sm" asp-controller="Merchant" asp-action="Index">Merchant backend</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Message" asp-action="Index">
+                        <i class="bi bi-chat-dots"></i> Messages
+                    </a>
+                    <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Logout</a>
+                }
+                else if (role == "admin")
+                {
+                    <a class="btn btn-outline-dark btn-sm" asp-controller="Admin" asp-action="Index">Admin backend</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Message" asp-action="Index">
+                        <i class="bi bi-chat-dots"></i> Messages
+                    </a>
+                    <a class="btn btn-outline-danger btn-sm" asp-controller="Account" asp-action="Logout">Logout</a>
+                }
+                else
+                {
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Account" asp-action="Login">Login</a>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Account" asp-action="Register">Register</a>
+                }
+                <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#supportModal">
+                    <i class="bi bi-headset"></i> Support
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="container pb-5">
+    @if (TempData["CartMessage"] != null)
+    {
+        <div class="alert alert-info">@TempData["CartMessage"]</div>
+    }
+    @if (TempData["OrderMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["OrderMessage"]</div>
+    }
+    @if (TempData["UserMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["UserMessage"]</div>
+    }
+    @if (TempData["UserError"] != null)
+    {
+        <div class="alert alert-danger">@TempData["UserError"]</div>
+    }
+    @if (TempData["AdminMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["AdminMessage"]</div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger">@TempData["AdminError"]</div>
+    }
+    @if (TempData["MerchantMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["MerchantMessage"]</div>
+    }
+    @if (TempData["MerchantError"] != null)
+    {
+        <div class="alert alert-danger">@TempData["MerchantError"]</div>
+    }
+
+    @RenderBody()
+</main>
+
+<div class="modal fade" id="supportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Support</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (role == "customer" || role == "merchant")
+                {
+                    <p class="text-muted small">
+                        Chat with the super administrator. You can also contact a seller from a product page
+                        or from your order list.
+                    </p>
+                }
+                else
+                {
+                    <p class="text-muted">Please <a asp-controller="Account" asp-action="Login">log in</a> to send a message.</p>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                @if (role == "customer" || role == "merchant")
+                {
+                    <a class="btn btn-accent" asp-controller="Message" asp-action="Chat"
+                       asp-route-peerRole="admin" asp-route-peerId="0">Open support chat</a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center text-muted py-4 border-top bg-white">
+    <small>Hardware Store &copy; @DateTime.Now.Year - Graduation project demo</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // AJAX suggestion for the search box.
+    (function () {
+        const input = document.getElementById('searchInput');
+        const box = document.getElementById('suggestBox');
+        if (!input || !box) return;
+        let timer = null;
+
+        input.addEventListener('input', function () {
+            const term = input.value.trim();
+            if (timer) clearTimeout(timer);
+            if (term.length < 1) { box.style.display = 'none'; return; }
+
+            timer = setTimeout(function () {
+                fetch('/Product/Suggest?term=' + encodeURIComponent(term))
+                    .then(r => r.json())
+                    .then(items => {
+                        if (!items.length) { box.style.display = 'none'; return; }
+                        box.innerHTML = items.map(i =>
+                            '<div class="suggest-item" data-name="' + i.name.replace(/"/g, '&quot;') + '">' + i.name + '</div>'
+                        ).join('');
+                        box.style.display = 'block';
+                        box.querySelectorAll('.suggest-item').forEach(el => {
+                            el.addEventListener('click', function () {
+                                input.value = el.dataset.name;
+                                box.style.display = 'none';
+                                input.form.submit();
+                            });
+                        });
+                    });
+            }, 250);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!box.contains(e.target) && e.target !== input) box.style.display = 'none';
+        });
+    })();
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

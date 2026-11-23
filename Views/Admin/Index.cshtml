@@ -1,0 +1,112 @@
+@model AdminDashboardVm
+@{
+    ViewData["Title"] = "Admin dashboard";
+    ViewBag.AdminMenu = "dashboard";
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Platform overview</h1>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Customers</div><div class="fs-5 fw-bold">@Model.CustomerCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Approved shops</div><div class="fs-5 fw-bold">@Model.MerchantCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Pending applications</div>
+                    <div class="fs-5 fw-bold">@Model.PendingMerchantCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Products</div><div class="fs-5 fw-bold">@Model.ProductCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Orders</div><div class="fs-5 fw-bold">@Model.OrderCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Sales amount</div>
+                    <div class="fs-6 fw-bold price">@Model.SalesAmount.ToString("0.00")</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Hidden reviews</div><div class="fs-5 fw-bold">@Model.PendingReviewCount</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card card-stat shadow-sm"><div class="card-body py-2">
+                    <div class="small text-muted">Quick links</div>
+                    <div class="small"><a asp-controller="Admin" asp-action="Stats">Statistics</a></div>
+                </div></div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white fw-semibold">Sales for the last 7 days</div>
+                    <div class="card-body"><canvas id="salesChart" height="120"></canvas></div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white fw-semibold">Product visits (last 7 days)</div>
+                    <div class="card-body"><canvas id="visitChart" height="120"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const salesLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SalesLabels));
+    const salesValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SalesValues));
+    const visitLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VisitLabels));
+    const visitValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.VisitValues));
+
+    new Chart(document.getElementById('salesChart'), {
+        type: 'line',
+        data: {
+            labels: salesLabels,
+            datasets: [{
+                label: 'Sales',
+                data: salesValues,
+                borderColor: '#1f3a5f',
+                backgroundColor: 'rgba(31,58,95,0.15)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    new Chart(document.getElementById('visitChart'), {
+        type: 'bar',
+        data: {
+            labels: visitLabels,
+            datasets: [{
+                label: 'Visits',
+                data: visitValues,
+                backgroundColor: '#f08c00'
+            }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+</script>
+}

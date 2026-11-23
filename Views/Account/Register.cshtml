@@ -1,0 +1,101 @@
+@{
+    var accountType = ViewBag.AccountType as string ?? "customer";
+}
+<h1 class="h4 mb-3 text-brand">Create an account</h1>
+
+@if (ViewBag.Success != null)
+{
+    <div class="alert alert-success">@ViewBag.Success</div>
+}
+@if (ViewBag.Error != null)
+{
+    <div class="alert alert-danger">@ViewBag.Error</div>
+}
+
+<div class="card shadow-sm" style="max-width: 620px;">
+    <div class="card-body">
+        <!-- Two separate registration forms in one page -->
+        <ul class="nav nav-tabs mb-4" id="registerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(accountType == "customer" ? "active" : null)" id="customerTab"
+                        data-bs-toggle="tab" data-bs-target="#customerPane" type="button" role="tab">
+                    <i class="bi bi-person"></i> Customer registration
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(accountType == "merchant" ? "active" : null)" id="merchantTab"
+                        data-bs-toggle="tab" data-bs-target="#merchantPane" type="button" role="tab">
+                    <i class="bi bi-shop"></i> Merchant registration
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Customer form -->
+            <div class="tab-pane fade @(accountType == "customer" ? "show active" : null)" id="customerPane" role="tabpanel">
+                <p class="text-muted small">Create a customer account to browse products, place orders and leave reviews.</p>
+                <form method="post" asp-controller="Account" asp-action="Register">
+                    <input type="hidden" name="accountType" value="customer" />
+                    <div class="mb-3">
+                        <label class="form-label">Username *</label>
+                        <input class="form-control" name="username" required maxlength="50" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password *</label>
+                        <input class="form-control" type="password" name="password" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input class="form-control" name="phone" maxlength="20" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Default address <span class="text-muted">(optional, used at checkout)</span></label>
+                        <input class="form-control" name="address" maxlength="255"
+                               placeholder="Street, building, city" />
+                    </div>
+                    <button class="btn btn-accent w-100" type="submit">Register as customer</button>
+                </form>
+            </div>
+
+            <!-- Merchant form -->
+            <div class="tab-pane fade @(accountType == "merchant" ? "show active" : null)" id="merchantPane" role="tabpanel">
+                <p class="text-muted small">Apply to open a shop. Applications are reviewed by the administrator; you can sign in only after approval.</p>
+                <form method="post" asp-controller="Account" asp-action="Register">
+                    <input type="hidden" name="accountType" value="merchant" />
+                    <div class="mb-3">
+                        <label class="form-label">Shop name *</label>
+                        <input class="form-control" name="shopName" required maxlength="100" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contact person</label>
+                        <input class="form-control" name="contactName" maxlength="100" />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Phone</label>
+                            <input class="form-control" name="merchantPhone" maxlength="20" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">E-mail (used as login) *</label>
+                            <input class="form-control" name="email" type="email" required maxlength="100" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password *</label>
+                        <input class="form-control" type="password" name="merchantPassword" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Shop description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-accent w-100" type="submit">Submit shop application</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="mt-4 small">
+            Already have an account?
+            <a asp-controller="Account" asp-action="Login">Sign in</a>
+        </div>
+    </div>
+</div>

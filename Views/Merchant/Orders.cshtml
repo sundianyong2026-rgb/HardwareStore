@@ -1,0 +1,86 @@
+@model List<OrderInfo>
+@{
+    ViewData["Title"] = "Shop orders";
+    ViewBag.MerchantMenu = "orders";
+    var status = ViewBag.Status as string;
+}
+
+<div class="row g-3">
+    <div class="col-lg-3">@await Html.PartialAsync("_Sidebar")</div>
+    <div class="col-lg-9">
+        <h1 class="h5 text-brand mb-3">Orders of my shop</h1>
+
+        <div class="mb-3 d-flex gap-2 flex-wrap">
+            <a class="btn btn-sm @(string.IsNullOrEmpty(status) ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders">All</a>
+            <a class="btn btn-sm @(status == "pending_payment" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="pending_payment">Pending payment</a>
+            <a class="btn btn-sm @(status == "paid" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="paid">Paid</a>
+            <a class="btn btn-sm @(status == "delivered" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="delivered">Delivered</a>
+            <a class="btn btn-sm @(status == "received" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="received">Received</a>
+            <a class="btn btn-sm @(status == "completed" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="completed">Completed</a>
+            <a class="btn btn-sm @(status == "canceled" ? "btn-accent" : "btn-outline-secondary")"
+               asp-controller="Merchant" asp-action="Orders" asp-route-status="canceled">Canceled</a>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-light border">No order in this status.</div>
+        }
+
+        @foreach (var order in Model)
+        {
+            <div class="card shadow-sm mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div class="small">
+                            <div class="fw-semibold">@order.OrderNo</div>
+                            <div class="text-muted">@order.ReceiverName @order.Phone</div>
+                            <div class="text-muted">@order.AddressDetail</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-secondary">@order.Status</span>
+                            <div class="price small mt-1">@order.TotalAmount.ToString("0.00")</div>
+                        </div>
+                    </div>
+
+                    <table class="table table-sm mt-2 mb-2">
+                        <tbody>
+                        @foreach (var item in order.Items)
+                        {
+                            <tr>
+                                <td class="small">@item.Product?.ProductName (@item.SkuSpecSnapshot)</td>
+                                <td class="small text-end">@item.UnitPrice.ToString("0.00") × @item.Quantity</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+
+                    <div class="d-flex gap-2">
+                        @if (order.Status == "paid")
+                        {
+                            <form method="post" asp-controller="Merchant" asp-action="Ship">
+                                <input type="hidden" name="orderId" value="@order.OrderId" />
+                                <button class="btn btn-sm btn-accent" type="submit">Mark as delivered</button>
+                            </form>
+                        }
+                        @if (order.Status == "completed" || order.Status == "canceled")
+                        {
+                            <form method="post" asp-controller="Merchant" asp-action="HideOrder"
+                                  onsubmit="return confirm('Remove this order from your list?')">
+                                <input type="hidden" name="orderId" value="@order.OrderId" />
+                                <input type="hidden" name="status" value="@status" />
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Remove from list</button>
+                            </form>
+                        }
+                        <span class="small text-muted">Created @order.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
